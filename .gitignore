@@ -1,0 +1,10 @@
+# secrets, database, media and logs never enter git
+data/
+outputs/
+logs/
+.env
+*.sqlite3*
+*.mp4
+*.wav
+__pycache__/
+.pytest_cache/

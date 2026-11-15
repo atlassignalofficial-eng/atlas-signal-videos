@@ -1,0 +1,13 @@
+[project]
+name = "blueprints-uncovered"
+version = "0.1.0"
+description = "AI-assisted production system for the Blueprints Uncovered YouTube channel"
+requires-python = ">=3.11"
+dependencies = []  # the engine is stdlib-only; rendering needs the "render" extra
+
+[project.optional-dependencies]
+render = ["pillow==12.3.0", "piper-tts==1.8.0"]
+dev = ["pytest==9.2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
