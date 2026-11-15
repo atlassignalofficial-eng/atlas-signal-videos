@@ -2,6 +2,8 @@
 #
 # Owner controls (GitHub app or website -> Actions -> bpu -> Run workflow):
 #   status | new | run | approve | reject | retry | pause | resume | snapshot | log
+# "new" with a template creates a Short job and runs it straight to the owner's
+# approval checkpoint; the video, thumbnail and upload.txt appear as a run artifact.
 # Schedule: a daily stats snapshot.
 #
 # State: the SQLite database lives on the `state` branch (one commit per run,
@@ -20,8 +22,12 @@ on:
         description: "Job id (run / approve / reject / retry / status)"
         required: false
         default: ""
+      template:
+        description: "Storyboard for a Short, e.g. true-size-africa (new)"
+        required: false
+        default: ""
       topic:
-        description: "Topic (new)"
+        description: "Topic (new, mock jobs only)"
         required: false
         default: ""
       note:
@@ -49,8 +55,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install tools
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg fonts-inter
+          pip install -q pytest==9.2.0 pillow==12.3.0 piper-tts==1.8.0
+
+      - name: Cache map data and voice models
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: bpu-cache-v1
+
       - name: Tests
-        run: pip install pytest==9.2.0 && python -m pytest -q
+        run: python -m pytest -q
 
       - name: Restore state
         run: |
@@ -92,11 +109,19 @@ jobs:
           CMD: ${{ inputs.command || 'snapshot' }}
           JOB: ${{ inputs.job }}
           TOPIC: ${{ inputs.topic }}
+          TEMPLATE: ${{ inputs.template }}
           NOTE: ${{ inputs.note }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           case "$CMD" in
-            new)            python -m bpu new --topic "${TOPIC:-untitled}" ;;
+            new)
+              if [ -n "$TEMPLATE" ]; then
+                JOB=$(python -m bpu new --kind short --template "$TEMPLATE")
+                echo "created job $JOB"
+                python -m bpu run "$JOB"
+              else
+                python -m bpu new --topic "${TOPIC:-untitled}"
+              fi ;;
             run|retry)      python -m bpu "$CMD" "$JOB" ;;
             approve)        python -m bpu approve "$JOB" --note "$NOTE" ;;
             reject)         python -m bpu approve "$JOB" --reject --note "$NOTE" ;;

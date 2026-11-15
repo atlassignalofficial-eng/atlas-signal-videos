@@ -1,0 +1,50 @@
+{
+  "slug": "true-size-africa",
+  "format": "short",
+  "voice": "norman",
+  "metadata": {
+    "title": "Africa Is 14× Bigger Than Greenland 🌍 #shorts",
+    "description": "On most world maps Greenland looks as big as Africa. It isn't even close: Africa is about 14 times bigger. The Mercator projection stretches land near the poles, so Greenland, Canada and Russia look huge while Africa looks small.\n\nThe mainland United States, China, India and much of Western Europe would all fit inside Africa.\n\nMap data: Natural Earth (public domain). Areas computed from the data.\n\n#maps #geography #truesize #mercator #shorts",
+    "tags": ["true size of africa", "how big is africa", "mercator projection", "greenland vs africa", "true size of countries", "map projection", "world map", "geography facts", "maps", "shorts"],
+    "category_id": "27",
+    "playlist": "Maps That Lie"
+  },
+  "cameras": {
+    "world": [-80, 60, -42, 85],
+    "africa": [-30, 62, -38, 40]
+  },
+  "actors": {
+    "africa":    {"select": ["continent:Africa"], "color": "teal", "label": "AFRICA"},
+    "greenland": {"select": ["country:GRL"], "color": "ice", "label": "GREENLAND"},
+    "usa":       {"select": ["mainland:USA"], "color": "red", "label": "USA"},
+    "china":     {"select": ["country:CHN"], "color": "gold", "label": "CHINA"},
+    "india":     {"select": ["country:IND"], "color": "orange", "label": "INDIA"},
+    "europe":    {"select": ["country:FRA", "country:ESP", "country:PRT", "country:DEU", "country:ITA",
+                             "country:BEL", "country:NLD", "country:CHE",
+                             "country:AUT"], "color": "blue", "label": "W. EUROPE"}
+  },
+  "checks": [
+    {"claim": "Africa is about 14 times bigger than Greenland", "ratio": ["africa", "greenland"], "expect": 14, "tolerance": 0.06},
+    {"claim": "Mainland USA + China + India + much of Western Europe add up to less than Africa", "fits": ["usa", "china", "india", "europe"], "in": "africa"}
+  ],
+  "beats": [
+    {"say": "This map is lying to you.",
+     "title": ["THIS MAP IS", "LYING TO YOU"], "show": ["africa", "greenland"], "camera": "world"},
+    {"say": "On most world maps, Greenland looks about as big as Africa.",
+     "title": ["SAME SIZE?", ""]},
+    {"say": "But watch what happens when we drag Greenland down to the equator.",
+     "move": {"greenland": [21, 4]}},
+    {"say": "It shrinks. Africa is actually about fourteen times bigger.",
+     "title": ["AFRICA IS", "14× BIGGER"], "camera": "africa"},
+    {"say": "In fact, the mainland United States fits inside it.",
+     "title": ["", ""], "hide": ["greenland"], "show": ["usa"], "move": {"usa": [18, 23]}},
+    {"say": "So does China.", "show": ["china"], "move": {"china": [29, 1]}},
+    {"say": "And India.", "show": ["india"], "move": {"india": [26, -18]}},
+    {"say": "And much of Western Europe. Add them all up, and Africa is still bigger.",
+     "title": ["ADD THEM UP:", "AFRICA IS BIGGER"], "show": ["europe"], "move": {"europe": [-4, 12]}, "unlabel": ["africa"]},
+    {"say": "Flat maps stretch the land near the poles, so the north looks huge.",
+     "title": ["MAPS", "STRETCH THE POLES"]},
+    {"say": "Which country surprised you most? Tell me in the comments.",
+     "title": ["WHICH ONE", "SURPRISED YOU?"]}
+  ]
+}

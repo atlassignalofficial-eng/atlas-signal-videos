@@ -26,6 +26,15 @@ YouTube access: put the Desktop-app OAuth file at `data/secrets/client_secret.js
 then run `python3 -m bpu auth-url` and follow the link, then
 `python3 -m bpu auth-code '<the localhost URL you were sent to>'`.
 
+## Make a Short
+```bash
+pip install pillow==12.3.0 piper-tts==1.8.0   # plus ffmpeg
+python3 -m bpu new --kind short --template true-size-africa   # prints the job id
+python3 -m bpu run <id>        # renders and runs QA, then stops for your approval
+```
+The job folder `outputs/job-<id>/` holds the video, thumbnail, `upload.txt` (title,
+description and tags), `qa.json` and `provenance.json`.
+
 ## Running on GitHub Actions
 The `bpu` workflow (`.github/workflows/bpu.yml`) is the main way to run this.
 - **Control it:** Actions → bpu → Run workflow, then pick a command (status, new, run,

@@ -13,6 +13,7 @@ secrets = "data/secrets"
 outputs = "outputs"
 logs = "logs"
 backups = "data/backups"
+cache = "data/cache"  # map data and voice models (re-downloadable)
 
 [pipeline]
 max_attempts = 3

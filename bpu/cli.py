@@ -17,6 +17,7 @@ def main(argv=None) -> int:
     n = sub.add_parser("new", help="create a job")
     n.add_argument("--kind", default="mock", choices=sorted(PIPELINES))
     n.add_argument("--topic", default="placeholder topic")
+    n.add_argument("--template", help="storyboard name in templates/shorts/ (kind=short)")
     for name in ("run", "retry"):
         sub.add_parser(name, help=f"{name} a job").add_argument("job", type=int)
     a = sub.add_parser("approve", help="approve (or --reject) a job's waiting checkpoint")
@@ -49,7 +50,12 @@ def _init(conn, cfg, args):
 
 
 def _new(conn, cfg, args):
-    print(pipeline.create_job(conn, args.kind, topic=args.topic))
+    if args.kind == "short":
+        if not args.template:
+            raise SystemExit("--template is required for kind=short")
+        print(pipeline.create_job(conn, "short", template=args.template))
+    else:
+        print(pipeline.create_job(conn, args.kind, topic=args.topic))
 
 
 def _run(conn, cfg, args):

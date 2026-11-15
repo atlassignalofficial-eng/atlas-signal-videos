@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PUBLISH_MODES = ("dry_run", "private", "unlisted", "public")
 REQUIRED = {
     "channel": ("id", "goal_subscribers", "goal_deadline"),
-    "paths": ("db", "secrets", "outputs", "logs", "backups"),
+    "paths": ("db", "secrets", "outputs", "logs", "backups", "cache"),
     "pipeline": ("max_attempts", "retry_backoff_seconds"),
     "publishing": ("mode",),
 }

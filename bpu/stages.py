@@ -1,10 +1,11 @@
 """Stage lists for each job kind.
 
-Phase 1 status: every content stage below is a MOCK. It returns fixed
-placeholder data tagged {"mock": True} so the engine can be exercised end to
-end. The publishing gate is real: it enforces approval, the publishing mode,
-duplicate prevention, and refuses to upload mock output. Real stages replace
-the mocks phase by phase (docs/PROGRESS.md).
+  mock  - Phase 1: content stages return placeholder data tagged {"mock": True}
+          to exercise the engine end to end.
+  short - Phase 3: a real map Short rendered from templates/shorts/<template>.json.
+
+The publishing gate is shared: it enforces approval, the publishing mode,
+duplicate prevention, and refuses to upload mock output.
 """
 import hashlib
 import json
@@ -71,4 +72,112 @@ MOCK = [
     Stage("learn", learn, needs=("analytics",), gives=("learning",)),
 ]
 
-PIPELINES = {"mock": MOCK}
+
+# ---------------------------------------------------------------- short (Phase 3)
+
+def _story(ctx):
+    from . import short
+    return short.load(ctx["story_path"])
+
+
+def _world(env):
+    from . import geo
+    return geo.load_countries(env.cfg["paths"]["cache"])
+
+
+def script(ctx, env):
+    from .config import ROOT
+    path = ROOT / "templates" / "shorts" / f"{ctx['template']}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"no storyboard {path}")
+    return {"story_path": str(path), "slug": _story({"story_path": path})["slug"]}
+
+
+def editorial_qa(ctx, env):
+    """Every numeric claim is recomputed from the map data; any miss stops the job."""
+    from . import short
+    story = _story(ctx)
+    results = short.check_claims(story, short.build_actors(story, _world(env)))
+    failed = [r for r in results if not r["passed"]]
+    if failed:
+        raise ValueError(f"claims failed fact-check: {failed}")
+    return {"editorial": {"claims": results}}
+
+
+def voice(ctx, env):
+    from . import short
+    work = env.out_dir / "audio"
+    work.mkdir(exist_ok=True)
+    return {"narration": short.narrate(_story(ctx), work, env.cfg["paths"]["cache"] / "voices")}
+
+
+def render(ctx, env):
+    from . import geo, short
+    story, countries = _story(ctx), _world(env)
+    out = env.out_dir / f"{ctx['slug']}.mp4"
+    video = short.render(story, countries, short.build_actors(story, countries), ctx["narration"],
+                         env.out_dir / "audio", out)
+    provenance = {
+        "map_data": geo.SOURCE,
+        "voice": {"name": ctx["narration"]["voice"], "dataset_licence": ctx["narration"]["licence"],
+                  "engine": "Piper (local)"},
+        "music_and_sfx": "synthesised by ffmpeg in this run (no third-party audio)",
+        "fonts": "Inter (SIL OFL) or DejaVu Sans (free licence)",
+        "storyboard": ctx["story_path"],
+    }
+    (env.out_dir / "provenance.json").write_text(json.dumps(provenance, indent=2))
+    return {"video": video}
+
+
+def video_qa(ctx, env):
+    from . import short
+    report = short.qa(ctx["video"]["file"])
+    (env.out_dir / "qa.json").write_text(json.dumps(report, indent=2))
+    if not report["passed"]:
+        raise ValueError(f"video QA failed: {[k for k, ok in report['checks'].items() if not ok]}")
+    return {"qa": report}
+
+
+def thumbnail(ctx, env):
+    import subprocess
+    lines = ctx["narration"]["lines"]
+    at = lines[min(3, len(lines) - 1)]["start"] + 2.2  # the "reveal" beat, title on screen
+    out = env.out_dir / "thumbnail.png"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.2f}", "-i", ctx["video"]["file"],
+                    "-frames:v", "1", str(out)], check=True)
+    return {"thumbnail": {"file": str(out), "at": round(at, 2)}}
+
+
+def seo(ctx, env):
+    meta = dict(_story(ctx)["metadata"])
+    problems = []
+    if not 0 < len(meta["title"]) <= 100:
+        problems.append("title must be 1-100 characters")
+    if len(meta["description"]) > 5000:
+        problems.append("description over 5000 characters")
+    if len(",".join(meta["tags"])) > 500:
+        problems.append("tags over 500 characters")
+    if any(c in "".join(meta["tags"]) + meta["title"] for c in "<>"):
+        problems.append("< and > are not allowed")
+    if problems:
+        raise ValueError("; ".join(problems))
+    (env.out_dir / "upload.txt").write_text(
+        f"TITLE\n{meta['title']}\n\nDESCRIPTION\n{meta['description']}\n\n"
+        f"TAGS\n{', '.join(meta['tags'])}\n\nPLAYLIST\n{meta.get('playlist', '')}\n")
+    return {"metadata": meta}
+
+
+SHORT = [
+    Stage("script", script, needs=("template",), gives=("story_path", "slug")),
+    Stage("editorial_qa", editorial_qa, needs=("story_path",), gives=("editorial",), retry=False),
+    Stage("voice", voice, needs=("story_path",), gives=("narration",)),
+    Stage("render", render, needs=("story_path", "narration", "slug"), gives=("video",)),
+    Stage("video_qa", video_qa, needs=("video",), gives=("qa",), retry=False),
+    Stage("thumbnail", thumbnail, needs=("video", "narration"), gives=("thumbnail",)),
+    Stage("seo", seo, needs=("story_path",), gives=("metadata",)),
+    Stage("owner_approval", None, approval=True),
+    Stage("publish", publish, needs=("metadata", "video", "owner_approval_approved"),
+          gives=("publication",), retry=False),
+]
+
+PIPELINES = {"mock": MOCK, "short": SHORT}

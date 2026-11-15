@@ -9,7 +9,7 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | 0 Audit | Inventory, gaps, risks, baseline, platform requirements | **tested**: [AUDIT.md](AUDIT.md) |
 | 1 Foundation | Validated config, DB and migrations, memory, orchestration, logs, CLI, tests; complete mocked workflow | **tested**: see below |
 | 2 Research | Sourced niche and competitor analysis, ranked ideas, evidence-backed content plan, growth scenarios | planned |
-| 3 Production | Script, storyboard, narration, assets, render, captions, thumbnail, QA; one original sample Short with no manual editing | planned |
+| 3 Production | Script, storyboard, narration, assets, render, captions, thumbnail, QA; one original sample Short with no manual editing | **tested** for map Shorts (sample rendered 2026-11-15); LLM scripting **planned** |
 | 4 Publishing | Upload with approval, explicit privacy, quota tracking, duplicate prevention; private test upload with permission | planned (gate logic tested) |
 | 5 Analytics | Real metrics (Data API plus Analytics API), baselines, experiments, reports | planned (stats snapshot tested) |
 | 6 Hardening | Security review, recovery, backups, deployment, cost controls, runbooks | planned |
@@ -33,10 +33,27 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | GitHub Actions runner (dispatch commands, daily snapshot, DB on `state` branch) | implemented-unverified: state restore and save simulated locally across 3 runs; not yet run on GitHub | — |
 | Dashboard | planned (CLI `status`, `approve`, `pause` serve as the interface for now) | — |
 
+## Phase 3 deliverables
+
+| Item | Status | Evidence |
+|---|---|---|
+| Storyboard format (`templates/shorts/*.json`): actors, cameras, beats, claims, metadata | tested | `test_storyboard_in_repo_is_valid`, `test_plan_*` |
+| True-size geometry: sphere moves keep area and north-up; Natural Earth pinned to commit `ca96624` | tested | `test_move_keeps_true_area_*`, `test_area_of_one_degree_square_*` |
+| Fact-check stage: every numeric claim recomputed from map data; failure stops the job | tested | `test_claims_are_recomputed_and_can_fail`; sample: 13.72× (claim ≈14×), 22.6M of 30.0M km² |
+| Narration: local Piper TTS, commercial-safe voices only (joe, john, norman) | tested | `test_only_commercially_licensed_voices_are_allowed`; en_US-ryan rejected (CC BY-NC-SA) |
+| Render: 1080×1920 30 fps, 2× supersampled, captions, titles, labels, camera moves | tested | `test_tiny_render_*`; sample Short (33 s) |
+| Sound: narration, ffmpeg-synth pad, whoosh per move, two-pass loudnorm to −14 LUFS | tested | `test_normalize_hits_target`; sample measured −14.5 LUFS, −1.2 dBTP |
+| Video QA report (size, fps, audio, duration, loudness, peak, black frames, silence) | tested | sample: 8/8 checks passed (`outputs/job-N/qa.json`) |
+| Thumbnail still, SEO validation, `upload.txt` for manual upload, `provenance.json` | tested | sample job 1 |
+| Script writing by LLM (OpenAI) | planned: needs a new key and a spend cap | — |
+| Long-form 16:9 workflow | planned | — |
+
 ## Verified test results
-- 2026-11-15: `python -m pytest -q`: **18 passed**.
+- 2026-11-15: `python -m pytest -q`: **28 passed** (about 22 s).
 - 2026-11-15: CLI smoke run: `init`, `new`, `run` (stopped at approval), `approve`, `run` (done,
   17/17 stages), `snapshot` (live API), `backup`, `pause`, `resume`, `log`. All as expected.
+- 2026-11-15: `bpu new --kind short --template true-size-africa` then `run`: 7 stages done in about 4 min
+  (4 CPU), stopped at approval; `approve` and `run` gave a dry-run publish package. QA 8/8.
 
 ## Decisions
 - **Stdlib-only Python and SQLite and ffmpeg.** Runs on Termux and GitHub Actions without
@@ -51,18 +68,27 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
   branch rather than in a cache (evictable) or artifacts (expire).
 - **LLM provider: OpenAI** (owner supplied a key) instead of Gemini. It is paid, so usage
   needs a spend cap and per-run cost logging.
+- **Rendering: Pillow and ffmpeg**, not Remotion, Manim or MoviePy. Flat 2D map animation needs
+  only polygon drawing; the others add Node, LaTeX or heavy dependencies for no gain here.
+  Revisit for 3D or long-form explainers.
+- **TTS: Piper, local and free.** Voices are limited to commercially licensed datasets.
+  OpenAI TTS is a paid upgrade if the owner wants it.
+- **Honest packing:** countries placed inside Africa still overlap a little (no layout fits
+  without rotation), so the narration claims only what the area check proves.
+- **OAuth stays in Testing** (owner, 2026-11-15): "Publish app" stayed disabled. The owner
+  uploads finished videos manually from `upload.txt`; the sign-in is renewed weekly for stats.
 
 ## Blockers
-1. **Push access**: the collaborator invite for `prashant-rajpu` must be accepted, and the
-   Claude GitHub App needs access to `atlas-signal-videos`.
+1. **`main` branch**: the work is on `claude/blueprints-foundation` and must be merged before
+   Actions can be triggered.
 2. **Repository secrets** not set yet (`YT_*`, `OPENAI_API_KEY`).
-3. **OAuth Testing mode**: refresh tokens expire after 7 days, which breaks unattended runs.
-   Publish the consent screen to "In production", then sign in again for a long-lived token.
+3. **OAuth Testing mode**: the refresh token expires after 7 days, so the daily snapshot fails
+   until the owner signs in again.
 4. **OpenAI key**: the first key was pasted in chat and must be revoked. A new one goes in
    repo secrets only. A monthly spend cap must be agreed before any paid call is coded to run.
 
 ## Next actions
-1. Resolve the push target, then push.
-2. Phase 3 first (owner priority): a real `short` pipeline that renders the Africa
-   true-size Short (map animation, narration, captions, loudness -14 LUFS), with QA checks.
-3. Phase 2 research stage: competitor and outlier study via public data and a ranked idea list.
+1. Owner: pick the voice, review the sample, merge to `main`.
+2. Run `new` with `template=true-size-africa` on GitHub Actions to verify the cloud render.
+3. Phase 2: research stage (public data on competitors and outliers) and a ranked idea list.
+4. LLM storyboard writer (OpenAI, under a spend cap) so new map Shorts don't need hand-written JSON.
