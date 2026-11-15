@@ -40,7 +40,7 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | Storyboard format (`templates/shorts/*.json`): actors, cameras, beats, claims, metadata | tested | `test_storyboard_in_repo_is_valid`, `test_plan_*` |
 | True-size geometry: sphere moves keep area and north-up; Natural Earth pinned to commit `ca96624` | tested | `test_move_keeps_true_area_*`, `test_area_of_one_degree_square_*` |
 | Fact-check stage: every numeric claim recomputed from map data; failure stops the job | tested | `test_claims_are_recomputed_and_can_fail`; sample: 13.72× (claim ≈14×), 22.6M of 30.0M km² |
-| Narration: Azure AI Speech `andrew` (owner's choice) or local Piper (joe, john, norman); commercial-safe voices only | Piper **tested**; Azure **implemented-unverified** (request format tested offline; needs a key for a live test) | `test_azure_voice_*`, `test_only_commercially_licensed_voices_are_allowed`; en_US-ryan rejected (CC BY-NC-SA) |
+| Narration: Azure AI Speech `andrew` (owner's choice) or local Piper (joe, john, norman); commercial-safe voices only | **tested**: Piper locally; Azure live on 2026-11-15 (sample job 2, QA 8/8, −14.0 LUFS, 36.7 s) | `test_azure_voice_*`, `test_only_commercially_licensed_voices_are_allowed`; en_US-ryan rejected (CC BY-NC-SA) |
 | Render: 1080×1920 30 fps, 2× supersampled, captions, titles, labels, camera moves | tested | `test_tiny_render_*`; sample Short (33 s) |
 | Sound: narration, ffmpeg-synth pad, whoosh per move, two-pass loudnorm to −14 LUFS | tested | `test_normalize_hits_target`; sample measured −14.5 LUFS, −1.2 dBTP |
 | Video QA report (size, fps, audio, duration, loudness, peak, black frames, silence) | tested | sample: 8/8 checks passed (`outputs/job-N/qa.json`) |
