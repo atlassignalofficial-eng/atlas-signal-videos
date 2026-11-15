@@ -38,7 +38,10 @@ def main(argv=None) -> int:
     logging.basicConfig(filename=cfg["paths"]["logs"] / "bpu.log", level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s %(message)s")
     conn = db.connect(cfg["paths"]["db"])
-    return COMMANDS[args.cmd](conn, cfg, args) or 0
+    try:
+        return COMMANDS[args.cmd](conn, cfg, args) or 0
+    finally:
+        conn.close()  # checkpoints the WAL so the .sqlite3 file alone is complete
 
 
 def _init(conn, cfg, args):

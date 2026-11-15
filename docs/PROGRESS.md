@@ -30,6 +30,7 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | Backup | tested | `test_settings_and_backup`, CLI smoke run |
 | 17 content stages, research to learn | **mocked**: placeholders tagged `"mock": true` | — |
 | YouTube OAuth and stats snapshot | tested offline and live | `test_youtube.py`; live `bpu snapshot` on 2026-11-15 returned 2 subscribers and 1 video |
+| GitHub Actions runner (dispatch commands, daily snapshot, DB on `state` branch) | implemented-unverified: state restore and save simulated locally across 3 runs; not yet run on GitHub | — |
 | Dashboard | planned (CLI `status`, `approve`, `pause` serve as the interface for now) | — |
 
 ## Verified test results
@@ -46,14 +47,19 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 - **No FastAPI or dashboard yet.** The CLI covers review, approval and pause. Add a tiny
   stdlib web page when the owner needs to approve from a phone browser.
 - **`publishing.mode = dry_run`** is the shipped default, and a test enforces it.
+- **Runtime: GitHub Actions** (owner decision, 2026-11-15). The DB persists on the `state`
+  branch rather than in a cache (evictable) or artifacts (expire).
+- **LLM provider: OpenAI** (owner supplied a key) instead of Gemini. It is paid, so usage
+  needs a spend cap and per-run cost logging.
 
 ## Blockers
-1. **Push access**: the connected GitHub account `prashant-rajpu` cannot push to
-   `atlassignalofficial-eng/atlas-signal-videos`. Code is in a local git repo and was sent to
-   the owner as an archive.
-2. **Owner runtime**: confirm where this runs (phone with Termux, PC, or GitHub Actions).
-3. **Gemini API key**: needed for Phase 2 and 3 scripting.
-4. **OAuth Testing mode**: the token expires about 2026-11-22.
+1. **Push access**: the collaborator invite for `prashant-rajpu` must be accepted, and the
+   Claude GitHub App needs access to `atlas-signal-videos`.
+2. **Repository secrets** not set yet (`YT_*`, `OPENAI_API_KEY`).
+3. **OAuth Testing mode**: refresh tokens expire after 7 days, which breaks unattended runs.
+   Publish the consent screen to "In production", then sign in again for a long-lived token.
+4. **OpenAI key**: the first key was pasted in chat and must be revoked. A new one goes in
+   repo secrets only. A monthly spend cap must be agreed before any paid call is coded to run.
 
 ## Next actions
 1. Resolve the push target, then push.

@@ -1,0 +1,129 @@
+# Runs the Blueprints Uncovered system on GitHub Actions.
+#
+# Owner controls (GitHub app or website -> Actions -> bpu -> Run workflow):
+#   status | new | run | approve | reject | retry | pause | resume | snapshot | log
+# Schedule: a daily stats snapshot.
+#
+# State: the SQLite database lives on the `state` branch (one commit per run,
+# so the branch history doubles as backups). Secrets come from repo secrets
+# and are written to data/secrets/ only for the duration of the run.
+name: bpu
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        type: choice
+        options: [status, new, run, approve, reject, retry, pause, resume, snapshot, log]
+        default: status
+      job:
+        description: "Job id (run / approve / reject / retry / status)"
+        required: false
+        default: ""
+      topic:
+        description: "Topic (new)"
+        required: false
+        default: ""
+      note:
+        description: "Note (approve / reject)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "23 17 * * *"  # 21:23 Dubai: daily stats snapshot
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bpu-state  # one run at a time: they share the database
+  cancel-in-progress: false
+
+jobs:
+  bpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Tests
+        run: pip install pytest==9.2.0 && python -m pytest -q
+
+      - name: Restore state
+        run: |
+          mkdir -p data
+          if git fetch --depth 1 origin state; then
+            git worktree add --detach "$RUNNER_TEMP/state" FETCH_HEAD
+            cp "$RUNNER_TEMP/state/bpu.sqlite3" data/ 2>/dev/null || true
+          else
+            git worktree add --orphan -b state "$RUNNER_TEMP/state"
+          fi
+
+      - name: Write secrets
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: |
+          umask 077
+          mkdir -p data/secrets
+          python - <<'EOF'
+          import json, os
+          from pathlib import Path
+          d = Path("data/secrets")
+          if os.environ.get("YT_REFRESH_TOKEN"):
+              (d / "client_secret.json").write_text(json.dumps({"installed": {
+                  "client_id": os.environ["YT_CLIENT_ID"],
+                  "client_secret": os.environ["YT_CLIENT_SECRET"],
+                  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                  "token_uri": "https://oauth2.googleapis.com/token"}}))
+              # expires_at 0 forces a refresh on first use
+              (d / "token.json").write_text(json.dumps({
+                  "refresh_token": os.environ["YT_REFRESH_TOKEN"], "access_token": "", "expires_at": 0}))
+          else:
+              print("::warning::YT_* secrets not set; YouTube commands will fail")
+          EOF
+
+      - name: Run command
+        env:
+          CMD: ${{ inputs.command || 'snapshot' }}
+          JOB: ${{ inputs.job }}
+          TOPIC: ${{ inputs.topic }}
+          NOTE: ${{ inputs.note }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          case "$CMD" in
+            new)            python -m bpu new --topic "${TOPIC:-untitled}" ;;
+            run|retry)      python -m bpu "$CMD" "$JOB" ;;
+            approve)        python -m bpu approve "$JOB" --note "$NOTE" ;;
+            reject)         python -m bpu approve "$JOB" --reject --note "$NOTE" ;;
+            status)         python -m bpu status $JOB ;;
+            *)              python -m bpu "$CMD" ;;
+          esac
+          { echo '```'; python -m bpu status $JOB; echo; python -m bpu log -n 15; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save state
+        if: always()
+        env:
+          CMD: ${{ inputs.command || 'snapshot' }}
+        run: |
+          rm -rf data/secrets
+          [ -f data/bpu.sqlite3 ] || exit 0
+          cp data/bpu.sqlite3 "$RUNNER_TEMP/state/"
+          cd "$RUNNER_TEMP/state"
+          git add bpu.sqlite3
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "state: $CMD (run ${{ github.run_id }})" || exit 0
+          git push origin HEAD:refs/heads/state
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs-${{ github.run_id }}
+          path: outputs/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -26,6 +26,15 @@ YouTube access: put the Desktop-app OAuth file at `data/secrets/client_secret.js
 then run `python3 -m bpu auth-url` and follow the link, then
 `python3 -m bpu auth-code '<the localhost URL you were sent to>'`.
 
+## Running on GitHub Actions
+The `bpu` workflow (`.github/workflows/bpu.yml`) is the main way to run this.
+- **Control it:** Actions → bpu → Run workflow, then pick a command (status, new, run,
+  approve, reject, retry, pause, resume, snapshot, log). The result appears in the run summary.
+- **Schedule:** a stats snapshot runs daily.
+- **State:** the SQLite database is kept on the `state` branch, one commit per run.
+- **Repository secrets** (Settings → Secrets and variables → Actions):
+  `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`, `OPENAI_API_KEY`.
+
 ## Docs
 - [MASTER_PROMPT.md](MASTER_PROMPT.md): full specification
 - [CLAUDE.md](CLAUDE.md): architecture, commands, conventions

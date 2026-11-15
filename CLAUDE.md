@@ -19,6 +19,8 @@ never fake engagement.
 - `bpu/stages.py`: stage lists per job kind (`PIPELINES`). Content stages are mocks in Phase 1.
 - `bpu/youtube.py`: YouTube Data API over OAuth, stdlib only; `snapshot()` stores stats.
 - `bpu/cli.py`: `python -m bpu …`
+- `.github/workflows/bpu.yml`: production runtime (GitHub Actions). The DB lives on the
+  `state` branch, and secrets come from repo secrets, written to `data/secrets/` per run.
 
 ## Commands
 ```bash
@@ -62,4 +64,4 @@ Free to do without asking: research, code, tests, local drafts and renders, anal
 - YPP thresholds rise on 2027-02-01 (see docs/AUDIT.md).
 
 ## Current status
-Phase 0 and Phase 1 are done and tested (18 tests). Next: Phase 3 sample Short. See docs/PROGRESS.md.
+Phase 0 and Phase 1 are done and tested (18 tests). The Actions runner is written, not yet run on GitHub. Next: Phase 3 sample Short. See docs/PROGRESS.md.
