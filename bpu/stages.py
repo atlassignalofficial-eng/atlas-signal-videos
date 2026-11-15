@@ -112,7 +112,7 @@ def voice(ctx, env):
 
 
 def render(ctx, env):
-    from . import geo, short
+    from . import geo, short, tts
     story, countries = _story(ctx), _world(env)
     out = env.out_dir / f"{ctx['slug']}.mp4"
     video = short.render(story, countries, short.build_actors(story, countries), ctx["narration"],
@@ -120,7 +120,7 @@ def render(ctx, env):
     provenance = {
         "map_data": geo.SOURCE,
         "voice": {"name": ctx["narration"]["voice"], "dataset_licence": ctx["narration"]["licence"],
-                  "engine": "Piper (local)"},
+                  "engine": tts.VOICES[ctx["narration"]["voice"]][0]},
         "music_and_sfx": "synthesised by ffmpeg in this run (no third-party audio)",
         "fonts": "Inter (SIL OFL) or DejaVu Sans (free licence)",
         "storyboard": ctx["story_path"],

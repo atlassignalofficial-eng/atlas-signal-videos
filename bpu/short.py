@@ -56,14 +56,13 @@ def check_claims(story, actors) -> list[dict]:
 
 
 def narrate(story, work: Path, voice_dir) -> dict:
-    model = tts.voice_model(story["voice"], voice_dir)
     lines, t = [], 0.0
     for i, beat in enumerate(story["beats"]):
-        wav = tts.synthesize(beat["say"], work / f"line{i:02d}.wav", model)
+        wav = tts.synthesize(beat["say"], work / f"line{i:02d}.wav", story["voice"], voice_dir)
         d = tts.duration(wav)
         lines.append({"wav": str(wav), "start": round(t, 3), "dur": round(d, 3)})
         t += d + GAP
-    return {"voice": story["voice"], "licence": tts.VOICES[story["voice"]][1],
+    return {"voice": story["voice"], "licence": tts.licence(story["voice"]),
             "lines": lines, "total": round(t - GAP + TAIL, 3)}
 
 

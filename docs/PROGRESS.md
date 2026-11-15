@@ -40,7 +40,7 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | Storyboard format (`templates/shorts/*.json`): actors, cameras, beats, claims, metadata | tested | `test_storyboard_in_repo_is_valid`, `test_plan_*` |
 | True-size geometry: sphere moves keep area and north-up; Natural Earth pinned to commit `ca96624` | tested | `test_move_keeps_true_area_*`, `test_area_of_one_degree_square_*` |
 | Fact-check stage: every numeric claim recomputed from map data; failure stops the job | tested | `test_claims_are_recomputed_and_can_fail`; sample: 13.72× (claim ≈14×), 22.6M of 30.0M km² |
-| Narration: local Piper TTS, commercial-safe voices only (joe, john, norman) | tested | `test_only_commercially_licensed_voices_are_allowed`; en_US-ryan rejected (CC BY-NC-SA) |
+| Narration: Azure AI Speech `andrew` (owner's choice) or local Piper (joe, john, norman); commercial-safe voices only | Piper **tested**; Azure **implemented-unverified** (request format tested offline; needs a key for a live test) | `test_azure_voice_*`, `test_only_commercially_licensed_voices_are_allowed`; en_US-ryan rejected (CC BY-NC-SA) |
 | Render: 1080×1920 30 fps, 2× supersampled, captions, titles, labels, camera moves | tested | `test_tiny_render_*`; sample Short (33 s) |
 | Sound: narration, ffmpeg-synth pad, whoosh per move, two-pass loudnorm to −14 LUFS | tested | `test_normalize_hits_target`; sample measured −14.5 LUFS, −1.2 dBTP |
 | Video QA report (size, fps, audio, duration, loudness, peak, black frames, silence) | tested | sample: 8/8 checks passed (`outputs/job-N/qa.json`) |
@@ -49,7 +49,7 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | Long-form 16:9 workflow | planned | — |
 
 ## Verified test results
-- 2026-11-15: `python -m pytest -q`: **28 passed** (about 22 s).
+- 2026-11-15: `python -m pytest -q`: **30 passed** (about 22 s).
 - 2026-11-15: CLI smoke run: `init`, `new`, `run` (stopped at approval), `approve`, `run` (done,
   17/17 stages), `snapshot` (live API), `backup`, `pause`, `resume`, `log`. All as expected.
 - 2026-11-15: `bpu new --kind short --template true-size-africa` then `run`: 7 stages done in about 4 min
@@ -71,8 +71,10 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 - **Rendering: Pillow and ffmpeg**, not Remotion, Manim or MoviePy. Flat 2D map animation needs
   only polygon drawing; the others add Node, LaTeX or heavy dependencies for no gain here.
   Revisit for 3D or long-form explainers.
-- **TTS: Piper, local and free.** Voices are limited to commercially licensed datasets.
-  OpenAI TTS is a paid upgrade if the owner wants it.
+- **TTS: Microsoft Azure AI Speech, voice en-US-AndrewNeural** (owner's choice, 2026-11-15).
+  Uses the official REST API on the free F0 tier (0.5M characters/month, commercial use of
+  output allowed). edge-tts was rejected: it uses the Edge read-aloud service, which isn't
+  licensed for commercial use, and it needs WebSocket. Piper remains a free offline fallback.
 - **Honest packing:** countries placed inside Africa still overlap a little (no layout fits
   without rotation), so the narration claims only what the area check proves.
 - **OAuth stays in Testing** (owner, 2026-11-15): "Publish app" stayed disabled. The owner
@@ -81,14 +83,15 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 ## Blockers
 1. **`main` branch**: the work is on `claude/blueprints-foundation` and must be merged before
    Actions can be triggered.
-2. **Repository secrets** not set yet (`YT_*`, `OPENAI_API_KEY`).
+2. **Repository secrets** not set yet (`YT_*`, `OPENAI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`).
+   Without the Azure secrets the sample Short stops at the voice stage.
 3. **OAuth Testing mode**: the refresh token expires after 7 days, so the daily snapshot fails
    until the owner signs in again.
 4. **OpenAI key**: the first key was pasted in chat and must be revoked. A new one goes in
    repo secrets only. A monthly spend cap must be agreed before any paid call is coded to run.
 
 ## Next actions
-1. Owner: pick the voice, review the sample, merge to `main`.
+1. Owner: create the Azure Speech resource (Free F0) and add its key and region as secrets; review the sample; merge PR #1.
 2. Run `new` with `template=true-size-africa` on GitHub Actions to verify the cloud render.
 3. Phase 2: research stage (public data on competitors and outliers) and a ranked idea list.
 4. LLM storyboard writer (OpenAI, under a spend cap) so new map Shorts don't need hand-written JSON.

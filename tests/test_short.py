@@ -79,7 +79,32 @@ def test_captions_follow_the_line():
 
 def test_only_commercially_licensed_voices_are_allowed(tmp_path):
     with pytest.raises(ValueError, match="commercial"):
-        tts.voice_model("ryan", tmp_path)
+        tts.synthesize("hi", tmp_path / "x.wav", "ryan", tmp_path)
+
+
+def test_azure_voice_sends_escaped_ssml_and_writes_wav(tmp_path, monkeypatch):
+    import io
+    sent = []
+
+    def fake_azure(req):
+        sent.append(req)
+        return io.BytesIO(b"RIFF....WAVEfmt fake")
+
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "k")
+    monkeypatch.setenv("AZURE_SPEECH_REGION", "eastus")
+    out = tts.synthesize("Africa > Greenland & more", tmp_path / "a.wav", "andrew", tmp_path,
+                         opener=fake_azure)
+    req = sent[0]
+    assert req.full_url == "https://eastus.tts.speech.microsoft.com/cognitiveservices/v1"
+    assert req.headers["Ocp-apim-subscription-key"] == "k"
+    assert b"en-US-AndrewNeural" in req.data and b"Africa &gt; Greenland &amp; more" in req.data
+    assert out.read_bytes().startswith(b"RIFF")
+
+
+def test_azure_voice_needs_credentials(tmp_path, monkeypatch):
+    monkeypatch.delenv("AZURE_SPEECH_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="AZURE_SPEECH_KEY"):
+        tts.synthesize("hi", tmp_path / "a.wav", "andrew", tmp_path)
 
 
 def _tone(path, seconds, hz=220):

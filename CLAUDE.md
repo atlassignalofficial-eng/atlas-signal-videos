@@ -18,7 +18,7 @@ never fake engagement.
   declare `needs` and `gives`, retry with backoff, and can be approval gates or non-retryable.
 - `bpu/stages.py`: stage lists per job kind (`PIPELINES`): `mock` (Phase 1) and `short` (real).
 - `bpu/geo.py`: Natural Earth countries (pinned commit), true areas, true-size sphere moves, Mercator.
-- `bpu/tts.py`: Piper narration; only commercially licensed voices.
+- `bpu/tts.py`: narration via Azure AI Speech (`andrew`, default) or local Piper; only commercially licensed voices.
 - `bpu/short.py`: storyboard to fact-check to narration to frames (Pillow) to mp4 (ffmpeg), plus QA.
 - `templates/shorts/*.json`: storyboards (actors, cameras, beats, claims, metadata).
 - `bpu/youtube.py`: YouTube Data API over OAuth, stdlib only; `snapshot()` stores stats.

@@ -42,7 +42,8 @@ The `bpu` workflow (`.github/workflows/bpu.yml`) is the main way to run this.
 - **Schedule:** a stats snapshot runs daily.
 - **State:** the SQLite database is kept on the `state` branch, one commit per run.
 - **Repository secrets** (Settings → Secrets and variables → Actions):
-  `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`, `OPENAI_API_KEY`.
+  `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`, `OPENAI_API_KEY`,
+  `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` (narration voice).
 
 ## Docs
 - [MASTER_PROMPT.md](MASTER_PROMPT.md): full specification
