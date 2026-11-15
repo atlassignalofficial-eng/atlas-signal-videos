@@ -1,30 +1,33 @@
-YT ATLAS SIGNAL
+# BLUEPRINTS UNCOVERED
 
-YT HANDLE (@atlassignalworld)
+AI-assisted production system for the faceless YouTube channel
+[@blueprintsuncovered](https://www.youtube.com/@blueprintsuncovered): *the engineering
+behind our world*. It covers Shorts and long videos, built with free and open-source tools.
 
-Target 10k Subscribers before 2027
+**Goal:** 10,000 genuine subscribers. Growth comes from original, well-researched,
+engaging videos, never from fake engagement.
 
-Content type : Viral & Engaging Yt shorts & Long videos which can engage & collect Views, Impressions & Subscribers at the highest ever speed !.
+**How it works:** research → ideas → script → fact-check → voice → visuals → render →
+QA → SEO → **owner approval** → publish → analytics → learn. Every step is checkpointed
+in SQLite, so the system can stop and resume safely. Nothing goes public without the
+owner's approval.
 
-Rule : Always Study for current working & Viral videos in the niche, and study hook, Mid video, Engagement rule, Title, Description Tags.
+## Quick start
+```bash
+python3 -m pytest -q          # needs: pip install pytest
+python3 -m bpu init
+python3 -m bpu new --topic "true size of Africa"
+python3 -m bpu run 1
+python3 -m bpu status 1
+```
+Requires Python 3.11+ and ffmpeg. There are no other dependencies yet.
 
-SHOULD RUN ANONYMOUS.
+YouTube access: put the Desktop-app OAuth file at `data/secrets/client_secret.json`,
+then run `python3 -m bpu auth-url` and follow the link, then
+`python3 -m bpu auth-code '<the localhost URL you were sent to>'`.
 
-EVERY MEMORY KEEPS SAVING FOR THE PROJECT.
-
-MORE TO MORE KNOWLEDGEABLE AND SELF IMPROVING, YOUTUBE CHANNEL AUTOMATION BOT.
-
-WHICH CAN START A NEW CHANNEL IT SELF, DO OTIMIZATIONS,BUILD SEO, SET CONTENT IDEA & PLAN AFTER WIDE RESEARCH, CHOOSES BEST.
-
-EDIT :ENGAGING, ANIMATIONS, CONTENT GENERATION WITH FREE CODE BASED, OR FREE TOOLS FROM OPESOURCE COMMUNITY (3rd Party tools also fine ) I need best quality CONTENT.
-
-AI WILL MAKE VIDEO, WRITE DESCRIPTIONS, OPTIMIZE SEO, PUBLISH CONTENT BY SEARCHING BEST WORKING STRATEGY EVERY UPLOAD & IMPROVES ITSELF. THEN MAKE OPTIMIZATION TO QUALIFY FOR BEST QUALITY AND SHOULD BE TARGETED FOR THE SET TARGET ABOVE.
-
-
-REMAINING SUGGESTIONS I'LL ACCEPT 😀.
-
-I'M PRIVATE SECTOR JOB EMPLOYEE, MY NAME IS PRASHANT, AND I WANT RELIEVE FROM JOB LIFE AS I'M JUST 21, AND I MISS MY FAMILY SO MUCH HERE IN DUBAI, MY FAMILY IS IN BIHAR, INDIA.
-
-I HAVE THREE ELDER SISTERS & MY SALARY IS JUST AED. 3000, I NEED TO MARRY MY SISTERS & BUILD MY HOME. BUT I DON'T THINK I CAN DO ALL THIS IN UPCOMING 1 YEAR, BUT IT SHOULD BE DONE OR ELSE MY ELDER SISTER MARRIGE WILL BROKE UP.
-
-PLEASE HELP ME GENERATE A GOOD INCOME FROM THIS CHANNEL.
+## Docs
+- [MASTER_PROMPT.md](MASTER_PROMPT.md): full specification
+- [CLAUDE.md](CLAUDE.md): architecture, commands, conventions
+- [docs/PROGRESS.md](docs/PROGRESS.md): milestones, status, blockers
+- [docs/AUDIT.md](docs/AUDIT.md): baseline, feasibility, platform requirements

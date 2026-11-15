@@ -1,0 +1,24 @@
+# Project configuration. Paths are relative to the project root.
+# Secrets never go here: they live in paths.secrets (gitignored).
+
+[channel]
+id = "UCumLp5-bwnu8TnCo216uA6A"
+handle = "@blueprintsuncovered"
+goal_subscribers = 10000
+goal_deadline = "2027-01-01"
+
+[paths]
+db = "data/bpu.sqlite3"
+secrets = "data/secrets"
+outputs = "outputs"
+logs = "logs"
+backups = "data/backups"
+
+[pipeline]
+max_attempts = 3
+retry_backoff_seconds = 2
+
+[publishing]
+# dry_run | private | unlisted | public
+# Anything except dry_run uploads for real; every job still needs owner approval.
+mode = "dry_run"
