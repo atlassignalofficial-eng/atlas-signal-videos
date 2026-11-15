@@ -47,7 +47,8 @@ STORY = {
     "actors": {"big": {"select": ["continent:Testland"], "color": "teal", "label": "BIG"},
                "small": {"select": ["mainland:SML"], "color": "ice", "label": "SMALL"}},
     "checks": [{"claim": "big is ~9.4x small (high-latitude square is smaller)", "ratio": ["big", "small"], "expect": 9.4, "tolerance": 0.05},
-               {"claim": "small fits", "fits": ["small"], "in": "big"}],
+               {"claim": "small fits", "fits": ["small"], "in": "big"},
+               {"claim": "big beats small", "bigger": ["big", "small"]}],
     "beats": [{"say": "Look at this.", "title": ["A", "B"], "show": ["big", "small"], "camera": "world"},
               {"say": "Now move it.", "move": {"small": [10, 0]}, "camera": "close", "unlabel": ["big"]},
               {"say": "Gone.", "hide": ["small"]}],
@@ -57,7 +58,7 @@ STORY = {
 def test_claims_are_recomputed_and_can_fail():
     actors = short.build_actors(STORY, COUNTRIES)
     results = short.check_claims(STORY, actors)
-    assert [r["passed"] for r in results] == [True, True]
+    assert [r["passed"] for r in results] == [True, True, True]
     wrong = {**STORY, "checks": [{**STORY["checks"][0], "expect": 14}]}
     assert short.check_claims(wrong, actors)[0]["passed"] is False
 
@@ -70,11 +71,48 @@ def test_plan_tracks_moves_hides_labels_and_camera():
     assert beats[2]["before"]["rest"]["small"] != beats[1]["before"]["rest"]["small"]  # moved
 
 
-def test_captions_follow_the_line():
-    line = "one two three four five six"
-    assert short._caption(line, 0.0, 2.0) == "ONE TWO THREE"
-    assert short._caption(line, 1.9, 2.0) == "FOUR FIVE SIX"
-    assert short._caption(line, 5.0, 2.0) == ""
+def test_captions_follow_the_line_break_at_punctuation_and_mark_emphasis():
+    line = "It *shrinks*. Flat maps stretch things"
+    assert short._caption(line, 0.0, 3.0)[:2] == ("IT SHRINKS.", True)   # sentence ends the chunk
+    assert short._caption(line, 1.5, 3.0)[:2] == ("FLAT MAPS", False)
+    assert short._caption(line, 2.9, 3.0)[0] == "STRETCH THINGS"
+    assert short._caption(line, 9.0, 3.0) is None
+
+
+def test_ghost_keeps_map_size_while_the_real_shape_shrinks():
+    """The on-screen proof: a Mercator-space copy never shrinks; the true-size move does."""
+    story = {**STORY, "beats": [STORY["beats"][0],
+                                {"say": "Move.", "move": {"small": [10, 0]}, "ghost": {"small": [10, 0]}},
+                                {"say": "Bye.", "unghost": ["small"]}]}
+    actors = short.build_actors(story, COUNTRIES)
+    beats = short.plan(story, actors)
+
+    def height(rings):
+        ys = [y for r in rings for _, y in r]
+        return max(ys) - min(ys)
+
+    src, dx, dy = beats[1]["ghost_moves"]["small"]
+    ghost = beats[2]["before"]["ghosts"]["small"]
+    real = short._merc_polys(beats[2]["before"]["rest"]["small"])
+    assert height(ghost) == pytest.approx(height(src))      # ghost: same size on the map
+    assert height(real) < height(ghost) * 0.5               # real shape: much smaller at the equator
+    assert "small" in beats[2]["unghost"]
+
+
+def test_pause_and_asterisks_do_not_reach_the_voice(tmp_path, monkeypatch):
+    spoken = []
+
+    def fake_tts(text, out, voice, cache, rate=None):
+        spoken.append((text, rate))
+        return _tone(out, 1.0)
+
+    monkeypatch.setattr(short.tts, "synthesize", fake_tts)
+    story = {**STORY, "voice_rate": "+10%",
+             "beats": [{"say": "It *shrinks*.", "pause": 0.5}, {"say": "Done."}]}
+    nar = short.narrate(story, tmp_path, tmp_path)
+    assert spoken == [("It shrinks.", "+10%"), ("Done.", "+10%")]
+    gap = nar["lines"][1]["start"] - nar["lines"][0]["dur"]
+    assert gap == pytest.approx(short.GAP + 0.5, abs=0.01)
 
 
 def test_only_commercially_licensed_voices_are_allowed(tmp_path):
@@ -98,6 +136,11 @@ def test_azure_voice_sends_escaped_ssml_and_writes_wav(tmp_path, monkeypatch):
     assert req.full_url == "https://eastus.tts.speech.microsoft.com/cognitiveservices/v1"
     assert req.headers["Ocp-apim-subscription-key"] == "k"
     assert b"en-US-AndrewNeural" in req.data and b"Africa &gt; Greenland &amp; more" in req.data
+    assert b"prosody" not in req.data
+    tts.synthesize("Hi", tmp_path / "b.wav", "andrew", tmp_path, opener=fake_azure, rate="+10%")
+    assert b"<prosody rate='+10%'>Hi</prosody>" in sent[1].data
+    with pytest.raises(ValueError, match="rate"):
+        tts.synthesize("Hi", tmp_path / "c.wav", "andrew", tmp_path, opener=fake_azure, rate="fast")
     assert out.read_bytes().startswith(b"RIFF")
 
 
@@ -148,6 +191,8 @@ def test_storyboard_in_repo_is_valid():
         assert story["voice"] in tts.VOICES
         names = set(story["actors"])
         for b in story["beats"]:
-            assert set(b.get("show", [])) | set(b.get("hide", [])) | set(b.get("move", {})) <= names
+            used = set(b.get("show", [])) | set(b.get("hide", [])) | set(b.get("move", {}))
+            used |= set(b.get("ghost", {})) | set(b.get("unghost", [])) | set(b.get("area", []))
+            assert used | set(b.get("pulse", [])) | set(b.get("unlabel", [])) <= names
             assert b.get("camera", "world") in story["cameras"]
         assert len(story["metadata"]["title"]) <= 100

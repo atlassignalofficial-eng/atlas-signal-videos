@@ -11,6 +11,7 @@ excluded because it uses the Edge browser's read-aloud service, which is not
 licensed for commercial use.)
 """
 import os
+import re
 import subprocess
 import sys
 import urllib.request
@@ -31,24 +32,30 @@ def licence(name: str) -> str:
     return VOICES[name][2]
 
 
-def synthesize(text: str, out_wav, voice: str, cache_dir, opener=urllib.request.urlopen) -> Path:
+def synthesize(text: str, out_wav, voice: str, cache_dir, opener=urllib.request.urlopen,
+               rate: str | None = None) -> Path:
+    """`rate` is a speed change such as "+10%" (Azure voices only)."""
     if voice not in VOICES:
         raise ValueError(f"voice {voice!r} is not cleared for commercial use; pick from {sorted(VOICES)}")
     engine, vid, _ = VOICES[voice]
     if engine == "azure":
-        return _azure(text, Path(out_wav), vid, opener)
+        return _azure(text, Path(out_wav), vid, opener, rate)
     model = _piper_model(vid, cache_dir)
     subprocess.run([sys.executable, "-m", "piper", "-m", str(model), "-f", str(out_wav)],
                    input=text, text=True, check=True, capture_output=True)
     return Path(out_wav)
 
 
-def _azure(text, out_wav: Path, voice_id, opener) -> Path:
+def _azure(text, out_wav: Path, voice_id, opener, rate=None) -> Path:
     key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
     if not key or not region:
         raise RuntimeError("AZURE_SPEECH_KEY and AZURE_SPEECH_REGION must be set for Azure voices")
-    ssml = (f"<speak version='1.0' xml:lang='en-US'><voice name='{voice_id}'>"
-            f"{escape(text)}</voice></speak>")
+    body = escape(text)
+    if rate:
+        if not re.fullmatch(r"[+-]\d{1,2}%", rate):
+            raise ValueError(f"bad voice rate {rate!r}; use e.g. '+10%'")
+        body = f"<prosody rate='{rate}'>{body}</prosody>"
+    ssml = f"<speak version='1.0' xml:lang='en-US'><voice name='{voice_id}'>{body}</voice></speak>"
     req = urllib.request.Request(
         f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1", ssml.encode(),
         headers={"Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",

@@ -45,6 +45,10 @@ python -m bpu auth-url | auth-code '<redirected localhost url>'
 - **Stdlib first.** No new dependency without a phase needing it; pin it in `pyproject.toml`.
   The engine is stdlib-only. Rendering needs the `render` extra (Pillow, piper-tts) and ffmpeg.
 - **Every on-screen number needs a `checks` entry** in its storyboard; editorial QA recomputes it.
+- **Storyboard beat keys:** `say` (wrap words in `*…*` to emphasise the caption), `title`, `show`,
+  `hide`, `move`, `ghost` (map-size copy that doesn't shrink), `unghost`, `area` (show computed
+  km²), `pulse`, `unlabel`, `camera`, `move_seconds`, `pause`, `impact`.
+- **Shorts pacing:** something must move in the first second; aim for 20–30 s.
 - **Voices:** add one to `tts.VOICES` only after reading its MODEL_CARD licence (commercial use).
 - **Never edit a shipped migration.** Add `bpu/migrations/000N_*.sql`.
 - New stage: a function `(ctx, env) -> dict`, registered with exact `needs` and `gives`.
@@ -71,5 +75,5 @@ Free to do without asking: research, code, tests, local drafts and renders, anal
 - YPP thresholds rise on 2027-02-01 (see docs/AUDIT.md).
 
 ## Current status
-Phases 0, 1 and 3 (map Shorts) are done and tested (28 tests). The sample Short was rendered locally.
+Phases 0, 1 and 3 (map Shorts) are done and tested (32 tests). The sample Short was rendered locally.
 The Actions runner is not yet run on GitHub. Next: Phase 2 research, then the LLM storyboard writer. See docs/PROGRESS.md.

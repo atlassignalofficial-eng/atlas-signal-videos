@@ -141,7 +141,8 @@ def video_qa(ctx, env):
 def thumbnail(ctx, env):
     import subprocess
     lines = ctx["narration"]["lines"]
-    at = lines[min(3, len(lines) - 1)]["start"] + 2.2  # the "reveal" beat, title on screen
+    line = lines[min(_story(ctx).get("thumbnail_beat", 3), len(lines) - 1)]  # the "reveal" beat
+    at = line["start"] + line["dur"] * 0.85
     out = env.out_dir / "thumbnail.png"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.2f}", "-i", ctx["video"]["file"],
                     "-frames:v", "1", str(out)], check=True)

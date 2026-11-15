@@ -49,7 +49,12 @@ Status tags: **tested** · **implemented-unverified** · **mocked** · **blocked
 | Long-form 16:9 workflow | planned | — |
 
 ## Verified test results
-- 2026-11-15: `python -m pytest -q`: **30 passed** (about 22 s).
+- 2026-11-15: `python -m pytest -q`: **32 passed** (about 17 s).
+- 2026-11-15: sample Short v2 after owner feedback ("not convincing or catchy"): job 3, 23.6 s,
+  QA 8/8, −14.1 LUFS. Changes: motion from the first second, a "map size" ghost that slides
+  beside the true-size shape, Greenland vs DR Congo side by side with computed areas,
+  two-word captions with emphasis, building titles, kick pulse, pops and impacts, voice +10%,
+  TTS padding trimmed. The sound was checked by measurement only; the owner judges by ear.
 - 2026-11-15: CLI smoke run: `init`, `new`, `run` (stopped at approval), `approve`, `run` (done,
   17/17 stages), `snapshot` (live API), `backup`, `pause`, `resume`, `log`. All as expected.
 - 2026-11-15: `bpu new --kind short --template true-size-africa` then `run`: 7 stages done in about 4 min
